@@ -1,0 +1,99 @@
+// Pines de la alarma 
+int buzzer = 8; // Pin del buzzer para emitir sonidos
+int trig = 6;    // Pin del sensor ultrasónico (Trigger)
+int echo = 3;    // Pin del sensor ultrasónico (Echo)
+
+// Pines del sensor de gas
+int pinLedRed = 10;    // Pin del LED rojo, indica alerta
+int pinLedGreen = 9;   // Pin del LED verde, indica normalidad
+int pin_d0 = 7;        // Pin digital para el sensor de humo
+int pin_a0 = A2;       // Pin analógico para el sensor de humo
+
+int distancia;         // Variable para almacenar la distancia medida
+int duracion;          // Variable para almacenar la duración del pulso del sensor ultrasónico
+int nivel_sensor = 300; // Umbral para el sensor de gas, indica nivel de alerta
+
+void setup() {
+  // Configuración de pines
+  pinMode(trig, OUTPUT); // Configurar el pin Trigger como salida
+  pinMode(echo, INPUT);  // Configurar el pin Echo como entrada
+  pinMode(buzzer, OUTPUT); // Configurar el pin del buzzer como salida
+
+  // Configuración de pines para el sensor de humo
+  pinMode(pin_d0, INPUT);      // Configurar el pin digital del sensor de humo como entrada
+  pinMode(pin_a0, INPUT);      // Configurar el pin analógico del sensor de humo como entrada
+  pinMode(pinLedRed, OUTPUT);   // Configurar el LED rojo como salida
+  pinMode(pinLedGreen, OUTPUT); // Configurar el LED verde como salida
+
+  Serial.begin(9600); // Inicializar la comunicación serie a 9600 baudios
+}
+
+void loop() {
+  // Medir distancia usando el sensor ultrasónico
+  medirDistancia();    // Llamar a la función para medir la distancia
+  // Leer datos del sensor de humo
+  leerSensorHumo();    // Llamar a la función para leer el sensor de humo
+
+  // Espera antes de la siguiente lectura
+  delay(200);          // Esperar 200 ms para evitar lecturas rápidas
+}
+
+void medirDistancia() {
+  // Limpia el pin Trigger
+  digitalWrite(trig, LOW); // Asegurarse de que el pin Trigger esté bajo
+  delayMicroseconds(200);  // Esperar 200 microsegundos
+
+  // Envía un pulso de 10 microsegundos
+  digitalWrite(trig, HIGH); // Enviar pulso alto al Trigger
+  delayMicroseconds(10);     // Mantener el pulso durante 10 microsegundos
+  digitalWrite(trig, LOW);  // Bajar el Trigger
+
+  // Mide la duración del pulso en el pin Echo
+  duracion = pulseIn(echo, HIGH); // Leer el tiempo que tarda el pulso en regresar
+
+  // Calcula la distancia en cm
+  distancia = (duracion / 2) / 29.1; // Convertir la duración a distancia en cm
+
+  // Imprime la distancia en el monitor serial
+  Serial.print("Distancia: "); // Imprimir etiqueta
+  Serial.print(distancia); // Imprimir valor de distancia
+  Serial.println(" cm"); // Imprimir unidad de medida
+
+  // Activar el buzzer si la distancia es menor al umbral
+  if (distancia > 30) { // Umbral de distancia en cm
+    digitalWrite(buzzer, LOW); // Apagar el buzzer
+    digitalWrite(pinLedRed, LOW); // Apagar el LED rojo
+    digitalWrite(pinLedGreen, HIGH); // Encender el LED verde
+  } else {
+    digitalWrite(buzzer, HIGH); // Encender el buzzer
+    tone(8, 700, 250); // Emitir un tono de 700 Hz durante 250 ms
+    delay(100); // Esperar 100 ms antes de continuar
+    digitalWrite(pinLedRed, HIGH); // Encender el LED rojo
+    digitalWrite(pinLedGreen, LOW); // Apagar el LED verde
+  }
+}
+
+void leerSensorHumo() {
+  // Leer el valor digital y analógico del sensor de humo
+  int digitalValue = digitalRead(pin_d0); // Leer el valor digital del sensor
+  int analogicValue = analogRead(pin_a0); // Leer el valor analógico del sensor
+
+  // Imprimir los valores en el monitor serial
+  Serial.print("Pin D0 : "); // Imprimir etiqueta para el pin D0
+  Serial.println(digitalValue); // Imprimir el valor digital
+  Serial.print("Pin A0 : "); // Imprimir etiqueta para el pin A0
+  Serial.println(analogicValue); // Imprimir el valor analógico
+
+  // Verificar el nivel de gas detectado
+  if (analogicValue > nivel_sensor) { // Comparar el valor analógico con el umbral
+    // Activar el buzzer y el LED rojo, desactivar el LED verde
+    digitalWrite(pinLedRed, HIGH); // Encender el LED rojo
+    digitalWrite(pinLedGreen, LOW); // Apagar el LED verde
+    digitalWrite(buzzer, HIGH); // Encender el buzzer
+  } else {
+    // Desactivar el buzzer y el LED rojo, activar el LED verde
+    digitalWrite(pinLedRed, LOW); // Apagar el LED rojo
+    digitalWrite(pinLedGreen, HIGH); // Encender el LED verde
+    digitalWrite(buzzer, LOW); // Apagar el buzzer
+  }
+}
