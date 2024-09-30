@@ -1,0 +1,63 @@
+#include <DHT_U.h>  // Incluir la librería para el sensor DHT
+#include <LiquidCrystal.h>  // Incluir la librería para el LCD
+
+#define DHTTYPE    DHT11  // Definir el tipo de sensor DHT (DHT11)
+#define DHT11_PIN  8      // Definir el pin al que está conectado el sensor DHT11
+
+// Crear una instancia del objeto DHT
+DHT dht(DHT11_PIN, DHTTYPE);
+
+// Definir los pines para el LCD
+int rs = 12;  // Pin RS del LCD
+int e = 11;   // Pin Enable del LCD
+int d4 = 5;   // Pin D4 del LCD
+int d5 = 4;   // Pin D5 del LCD
+int d6 = 3;   // Pin D6 del LCD
+int d7 = 2;   // Pin D7 del LCD
+
+// Crear una instancia del objeto LiquidCrystal
+LiquidCrystal lcd(rs, e, d4, d5, d6, d7);
+
+void setup() {
+  lcd.begin(16, 2);  // Inicializar el LCD con 16 columnas y 2 filas
+  Serial.begin(9600);  // Inicializar la comunicación serie a 9600 baudios
+  dht.begin();  // Inicializar el sensor DHT
+}
+
+void loop() {
+  medirTemperatura();  // Llamar a la función para medir temperatura y humedad
+  delay(2000);  // Esperar 2 segundos antes de la siguiente lectura
+}
+
+void medirTemperatura() {
+  float h = dht.readHumidity();  // Leer la humedad desde el sensor
+  float t = dht.readTemperature();  // Leer la temperatura desde el sensor
+
+  // Verificar si las lecturas son válidas
+  if (isnan(h) || isnan(t)) {
+    Serial.println("Failed to read from DHT sensor!");  // Imprimir error en la consola
+    lcd.clear();  // Limpiar el LCD
+    lcd.setCursor(0, 0);  // Establecer el cursor en la primera línea
+    lcd.print("Sensor Error");  // Mostrar mensaje de error en el LCD
+    return;  // Salir de la función
+  }
+
+  // Imprimir la temperatura en la consola
+  Serial.print("Temperatura = ");
+  Serial.print(t);  // Imprimir el valor de la temperatura
+  Serial.println(" C");  // Imprimir unidad
+
+  // Imprimir la humedad en la consola
+  Serial.print("Humedad = ");
+  Serial.print(h);  // Imprimir el valor de la humedad
+  Serial.println(" %");  // Imprimir unidad
+
+  lcd.clear();  // Limpiar el LCD antes de mostrar nuevos valores
+  lcd.setCursor(0, 0);  // Establecer el cursor en la primera línea
+  lcd.print("Temp: ");  // Mostrar etiqueta de temperatura
+  lcd.print(t);  // Mostrar valor de temperatura
+  
+  lcd.setCursor(0, 1);  // Establecer el cursor en la segunda línea
+  lcd.print("Humedad: ");  // Mostrar etiqueta de humedad
+  lcd.print(h);  // Mostrar valor de humedad
+}
